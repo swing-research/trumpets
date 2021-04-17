@@ -56,7 +56,7 @@ class posterior(tf.keras.Model):
 class generator(tf.keras.Model):
     def __init__(self, **kwargs):
         super(generator, self).__init__()
-        """Bijective Model architecture
+        """Injective Model architecture
         . upsqueeze
         --> revnet
         |-> inj_rev_step
@@ -142,7 +142,7 @@ class generator(tf.keras.Model):
 class latent_generator(tf.keras.Model):
     def __init__(self, **kwargs):
         super(latent_generator, self).__init__()
-        """ Injective Model architecture
+        """ Bijective Model architecture
         --> revnet
         
         + 4x4x12 --> 4x4x12 --> 4x4x12 --> 4x4x12 -->

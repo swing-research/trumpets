@@ -160,17 +160,17 @@ def train(num_epochs,
     print('Dataset is loaded: training and test dataset shape: {} {}'.
           format(np.shape(training_images), np.shape(testing_images)))
 
-    optimizer = tf.keras.optimizers.Adam(learning_rate=lr , clipnorm=1) # Optimizer of bijective network
-    f_optimizer = tf.keras.optimizers.Adam(learning_rate=lr) # Optimizer of injective network
+    optimizer = tf.keras.optimizers.Adam(learning_rate=lr , clipnorm=1) # Optimizer of injective network
+    f_optimizer = tf.keras.optimizers.Adam(learning_rate=lr) # Optimizer of bijective network
 
     pz = Prior()
     
     time_vector = np.zeros([num_epochs,1]) # time per epoch
     model = generator(dataset=dataset ,
                       revnet_depth = model_depth ,
-                      activation = inv_conv_activation) # Bijective network
+                      activation = inv_conv_activation) # Injective network
     latent_model = latent_generator(dataset=dataset ,
-                                    revnet_depth = latent_depth) # Injective network
+                                    revnet_depth = latent_depth) # Bijective network
 
      # call generator once to set weights (Data dependent initialization)
     dummy_x = training_images[0:1000]
@@ -187,7 +187,7 @@ def train(num_epochs,
     
     @tf.function
     def train_step_mse(sample):
-        """MSE training of the bijective network"""
+        """MSE training of the injective network"""
 
         bs = tf.shape(sample)[0]
         with tf.GradientTape() as tape:
@@ -214,7 +214,7 @@ def train(num_epochs,
     
     @tf.function
     def train_step_ml(sample):
-        """ML training of the Injective network"""
+        """ML training of the bijective network"""
 
         bs = tf.shape(sample)[0]
         with tf.GradientTape() as tape:
@@ -247,7 +247,7 @@ def train(num_epochs,
 
             for i in range(num_iters):
                 if epoch < ml_threshold: 
-                    # MSE traiing of the bijective network for ml-threshold epochs
+                    # MSE traiing of the injective network for ml-threshold epochs
                     t = np.random.randint(0, num_iters)
                     x = training_images[t*batch_size:(t+1)*batch_size]
                     mse_loss = train_step_mse(x)
@@ -259,7 +259,7 @@ def train(num_epochs,
                     
                 else:
                     
-                    # ML training of the injective network after ml threshold epochs
+                    # ML training of the bijective network after ml threshold epochs
                     if ml_threshold == 0:
                         mse_loss = 0
                     t = np.random.randint(0, num_iters)

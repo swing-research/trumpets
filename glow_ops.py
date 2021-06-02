@@ -409,21 +409,41 @@ class permute(layers.Layer):
         return y, objective
 
 class linear_dim_change(layers.Layer):
-    def __init__(self, out_dim):
+    """Linear dimension reducing layer
+
+    This layer needs to be initialized via the larger side,
+    i.e. layer is f(x) : R^n --> R^m (n>m)
+    reverse would be R^m --> R^n
+    """
+    def __init__(self, out_dim, gamma=1e-2):
         super(linear_dim_change, self).__init__()
         self.out_dim = out_dim
+        self.gamma = gamma
 
     def build(self, input_shape):
         in_dim = input_shape[-1]
+
+        assert_str = "Dim-reducing layer cannot have input dim (%d) < output dim (%d)"%(
+            in_dim, self.out_dim)
+        assert_str += ". Try building the layer in the opposite direction."
+
+        assert self.out_dim < in_dim,  assert_str
         self.w = tf.Variable(tf.random.normal((in_dim,self.out_dim))/np.sqrt(in_dim))
 
     def call(self, x, reverse=False):
         s = tf.linalg.svd(self.w, 
             full_matrices=False, compute_uv=False)
+
+        s = s + self.gamma**2/(s+1e-12)
+
         obj = tf.reduce_sum(tf.math.log(s))
 
         if reverse:
-            return tf.matmul(x, tf.linalg.pinv(self.w)), -obj
+            prefactor = tf.matmul(self.w, self.w, transpose_a=True) + \
+                self.gamma**2*tf.eye(tf.shape(self.w)[1])
+
+            w_inv = tf.matmul( tf.linalg.inv(prefactor) , self.w, transpose_b=True)
+            return tf.matmul(x, w_inv), -obj
 
         return tf.matmul(x, self.w), obj
 
